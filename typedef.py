@@ -3,6 +3,7 @@ from itertools import product
 from dataclasses import dataclass
 from husfort.qsqlite import CDbStruct
 from typedefs.typedef_instrus import TUniverse, CCfgAvlbUnvrs
+from typedefs.typedef_css import CCfgCss, CCfgICov, CCfgMkt
 
 
 """
@@ -26,6 +27,13 @@ class CCfgDbStruct:
 
 
 @dataclass(frozen=True)
+class CCfgConst:
+    INIT_CASH: float
+    COST_RATE: float
+    LAG: int
+
+
+@dataclass(frozen=True)
 class CCfgProj:
     # --- shared
     calendar_path: str
@@ -44,7 +52,27 @@ class CCfgProj:
     # --- project parameters
     universe: TUniverse
     avlb_unvrs: CCfgAvlbUnvrs
+    css: CCfgCss
+    icov: CCfgICov
+    mkt: CCfgMkt
+    const: CCfgConst
 
     @property
-    def available_dir(self) -> str:
-        return os.path.join(self.project_root_dir, "available")
+    def sectors(self) -> list[str]:
+        return sorted(list(set([v.sectorL1 for v in self.universe.values()])))
+
+    @property
+    def avlb_dir(self) -> str:
+        return os.path.join(self.project_root_dir, "avlb")
+
+    @property
+    def css_dir(self) -> str:
+        return os.path.join(self.project_root_dir, "css")
+
+    @property
+    def icov_dir(self) -> str:
+        return os.path.join(self.project_root_dir, "icov")
+
+    @property
+    def mkt_dir(self):
+        return os.path.join(self.project_root_dir, "mkt")

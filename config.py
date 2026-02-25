@@ -2,7 +2,7 @@ import yaml
 from husfort.qutility import check_and_mkdir
 from husfort.qsqlite import CDbStruct, CSqlTable
 from typedefs.typedef_instrus import TUniverse, TInstruName, CCfgInstru
-from typedef import CCfgAvlbUnvrs  # , CCfgCss, CCfgICov, CCfgMktIdx, CCfgConst, CCfgTst
+from typedef import CCfgAvlbUnvrs, CCfgCss, CCfgICov, CCfgMkt, CCfgConst  # CCfgTst
 from typedef import CCfgProj, CCfgDbStruct
 
 # ---------- project configuration ----------
@@ -28,6 +28,10 @@ proj_cfg = CCfgProj(
     # --- global settings
     universe=universe,
     avlb_unvrs=CCfgAvlbUnvrs(**_config["available"]),
+    css=CCfgCss(**_config["css"]),
+    icov=CCfgICov(**_config["icov"]),
+    mkt=CCfgMkt(**_config["mkt"]),
+    const=CCfgConst(**_config["CONST"]),
 )
 
 check_and_mkdir(proj_cfg.project_root_dir)
