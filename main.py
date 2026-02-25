@@ -32,7 +32,7 @@ def parse_args():
     )
 
     # switch: available
-    arg_parser_subs.add_parser(name="available", help="Calculate available universe")
+    arg_parser_subs.add_parser(name="avlb", help="Calculate available universe")
 
     return arg_parser.parse_args()
 
@@ -50,8 +50,8 @@ if __name__ == "__main__":
     bgn_date, stp_date = args.bgn, args.stp or calendar.get_next_date(args.bgn, shift=1)
     db_struct_avlb = get_avlb_db(proj_cfg.available_dir)
 
-    if args.switch == "available":
-        from solutions.available import main_available
+    if args.switch == "avlb":
+        from solutions.avlb import main_available
 
         main_available(
             bgn_date=bgn_date,
