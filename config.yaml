@@ -185,6 +185,10 @@ mkt:
   equity: 881001.WI
   commodity: NH0100.NHF
 
+tst:
+  wins: [1, 5]
+  wins_qtest: [5] # must be subset of wins
+
 # ------- const -------
 CONST:
   INIT_CASH: 100_000_000

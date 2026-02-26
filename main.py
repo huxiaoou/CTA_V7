@@ -43,6 +43,9 @@ def parse_args():
     # switch: market
     arg_parser_subs.add_parser(name="mkt", help="Calculate market index return")
 
+    # switch: test return
+    arg_parser_subs.add_parser(name="test_return", help="Calculate test returns")
+
     return arg_parser.parse_args()
 
 
@@ -110,5 +113,22 @@ if __name__ == "__main__":
             mkt_idxes=proj_cfg.mkt.idxes,
             sectors=proj_cfg.sectors,
         )
+    elif args.switch == "test_return":
+        from solutions.test_return import CTestReturnsByInstru, CTestReturnsAvlb
+
+        for ret in proj_cfg.all_rets:
+            test_returns_by_instru = CTestReturnsByInstru(
+                ret=ret, universe=proj_cfg.universe,
+                test_returns_by_instru_dir=proj_cfg.test_returns_by_instru_dir,
+                db_struct_preprocess=db_struct_cfg.preprocess,
+            )
+            test_returns_by_instru.main(bgn_date, stp_date, calendar)
+            test_returns_avlb = CTestReturnsAvlb(
+                ret=ret, universe=proj_cfg.universe,
+                test_returns_by_instru_dir=proj_cfg.test_returns_by_instru_dir,
+                test_returns_avlb_raw_dir=proj_cfg.test_returns_avlb_raw_dir,
+                db_struct_avlb=db_struct_avlb,
+            )
+            test_returns_avlb.main(bgn_date, stp_date, calendar)
     else:
         logger.error(f"switch = {args.switch} is not implemented yet.")

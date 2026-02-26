@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from husfort.qsqlite import CDbStruct
 from typedefs.typedef_instrus import TUniverse, CCfgAvlbUnvrs
 from typedefs.typedef_css import CCfgCss, CCfgICov, CCfgMkt
+from typedefs.typedef_returns import CCfgTst, TReturnClass, CRet, TRets
 
 
 """
@@ -56,10 +57,25 @@ class CCfgProj:
     icov: CCfgICov
     mkt: CCfgMkt
     const: CCfgConst
+    tst: CCfgTst
 
     @property
     def sectors(self) -> list[str]:
         return sorted(list(set([v.sectorL1 for v in self.universe.values()])))
+
+    @property
+    def all_rets(self) -> TRets:
+        return [
+            CRet(ret_class=TReturnClass(rc), win=w, lag=self.const.LAG)
+            for rc, w in product(TReturnClass, self.tst.wins)
+        ]
+
+    @property
+    def qtest_rets(self) -> TRets:
+        return [
+            CRet(ret_class=TReturnClass(rc), win=w, lag=self.const.LAG)
+            for rc, w in product(TReturnClass, self.tst.wins_qtest)
+        ]
 
     @property
     def avlb_dir(self) -> str:
@@ -76,3 +92,11 @@ class CCfgProj:
     @property
     def mkt_dir(self):
         return os.path.join(self.project_root_dir, "mkt")
+
+    @property
+    def test_returns_by_instru_dir(self):
+        return os.path.join(self.project_root_dir, "test_returns_by_instru")
+
+    @property
+    def test_returns_avlb_raw_dir(self):
+        return os.path.join(self.project_root_dir, "test_returns_avlb_raw")

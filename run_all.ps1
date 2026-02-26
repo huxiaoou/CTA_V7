@@ -7,3 +7,4 @@ python main.py --bgn $bgn_date_avlb --stp $stp_date avlb
 python main.py --bgn $bgn_date_avlb --stp $stp_date mkt
 python main.py --bgn $bgn_date_avlb --stp $stp_date css
 python main.py --bgn $bgn_date_avlb --stp $stp_date icov
+python main.py --bgn $bgn_date_avlb --stp $stp_date test_return

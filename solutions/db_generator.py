@@ -1,5 +1,6 @@
 import os
 from husfort.qsqlite import CDbStruct, CSqlTable, CSqlVar
+from typedefs.typedef_returns import TReturnClass, CRet
 
 
 # ----------------------------------------
@@ -78,5 +79,54 @@ def get_market_db(market_dir: str, sectors: list[str]) -> CDbStruct:
             name="mkt",
             primary_keys=[CSqlVar("trade_date", "TEXT")],
             value_columns=v_s0 + v_s1 + v_idx,
+        ),
+    )
+
+
+def gen_test_returns_by_instru_db(
+    instru: str,
+    test_returns_by_instru_dir: str,
+    ret_class: TReturnClass,
+    ret: CRet,
+) -> CDbStruct:
+    """
+
+    :param instru: 'RB.SHFE'
+    :param test_returns_by_instru_dir: test_returns_by_instru_dir
+    :param ret_class: 'Opn' or 'Cls'
+    :param ret:
+    :return:
+    """
+    return CDbStruct(
+        db_save_dir=os.path.join(test_returns_by_instru_dir, ret_class),
+        db_name=f"{instru}.db",
+        table=CSqlTable(
+            name=ret.ret_name,
+            primary_keys=[CSqlVar("trade_date", "TEXT")],
+            value_columns=[CSqlVar("ticker", "TEXT"), CSqlVar(ret.ret_name, "REAL")],
+        ),
+    )
+
+
+def gen_test_returns_avlb_db(
+    test_returns_avlb_dir: str,
+    ret_class: TReturnClass,
+    ret: CRet,
+) -> CDbStruct:
+    """
+
+    :param test_returns_avlb_dir: 'raw' or 'neu'
+    :param ret_class: 'Opn' or 'Cls'
+    :param ret:
+    :return:
+    """
+
+    return CDbStruct(
+        db_save_dir=test_returns_avlb_dir,
+        db_name=f"{ret_class}.db",
+        table=CSqlTable(
+            name=ret.ret_name,
+            primary_keys=[CSqlVar("trade_date", "TEXT"), CSqlVar("instrument", "TEXT")],
+            value_columns=[CSqlVar(ret.ret_name, "REAL")],
         ),
     )
