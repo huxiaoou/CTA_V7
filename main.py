@@ -57,6 +57,26 @@ def parse_args(cfg_facs: CCfgFactors):
         choices=cfg_facs.classes,
     )
 
+    # switch: ic
+    arg_parser_sub = arg_parser_subs.add_parser(name="ic", help="Calculate ic_tests")
+    arg_parser_sub.add_argument(
+        "--fclass",
+        type=str,
+        help="factor class to test",
+        required=True,
+        choices=cfg_facs.classes,
+    )
+
+    # switch: vt
+    arg_parser_sub = arg_parser_subs.add_parser(name="vt", help="Calculate vt_tests")
+    arg_parser_sub.add_argument(
+        "--fclass",
+        type=str,
+        help="factor class to test",
+        required=True,
+        choices=cfg_facs.classes,
+    )
+
     return arg_parser.parse_args()
 
 
@@ -178,5 +198,30 @@ if __name__ == "__main__":
             db_struct_avlb=db_struct_avlb,
         )
         fac_avlb.main(bgn_date, stp_date, calendar)
+    elif args.switch in ("ic", "vt"):
+        from solutions.qtests import main_qtests, TICTestAuxArgs
+
+        factor_grp = cfg_factors.get_cfg(factor_class=args.fclass)
+        tests_dir = {
+            "ic": proj_cfg.ic_tests_dir,
+            "vt": proj_cfg.vt_tests_dir,
+        }[args.switch]
+        aux_args_list: list[TICTestAuxArgs] = {
+            "ic": [(proj_cfg.factors_avlb_ewa_dir, proj_cfg.test_returns_avlb_raw_dir)],
+            "vt": [(proj_cfg.factors_avlb_sig_dir, proj_cfg.test_returns_avlb_raw_dir)],
+        }[args.switch]
+
+        main_qtests(
+            rets=proj_cfg.qtest_rets,
+            factor_grp=factor_grp,
+            aux_args_list=aux_args_list,
+            tests_dir=tests_dir,
+            db_struct_avlb=db_struct_avlb,
+            bgn_date=bgn_date,
+            stp_date=stp_date,
+            calendar=calendar,
+            test_type=args.switch,
+            call_multiprocess=not args.nomp,
+        )
     else:
         logger.error(f"switch = {args.switch} is not implemented yet.")

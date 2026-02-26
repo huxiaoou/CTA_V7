@@ -4,8 +4,7 @@ param (
     [string]$bgn_date_qtest,
     [string]$stp_date,
     [string]$factor,
-    [Switch]$DisableMP,
-    [Switch]$TestOT
+    [Switch]$DisableMP
 )
 
 function CheckExistenceRemove
@@ -48,18 +47,10 @@ if ($DisableMP)
     python main.py --bgn $bgn_date_factor --stp $stp_date --nomp factor --fclass $factor
     python main.py --bgn $bgn_date_qtest --stp $stp_date --nomp ic --fclass $factor
     python main.py --bgn $bgn_date_qtest --stp $stp_date --nomp vt --fclass $factor
-    if ($TestOT)
-    {
-        python main.py --bgn $bgn_date_qtest --stp $stp_date --nomp ot --fclass $factor
-    }
 }
 else
 {
     python main.py --bgn $bgn_date_factor --stp $stp_date factor --fclass $factor
     python main.py --bgn $bgn_date_qtest --stp $stp_date ic --fclass $factor
     python main.py --bgn $bgn_date_qtest --stp $stp_date vt --fclass $factor
-    if ($TestOT)
-    {
-        python main.py --bgn $bgn_date_qtest --stp $stp_date ot --fclass $factor
-    }
 }

@@ -116,3 +116,15 @@ class CCfgProj:
     @property
     def factors_avlb_sig_dir(self):  # sig: signal
         return os.path.join(self.project_root_dir, "factors_avlb_sig")
+
+    @property
+    def ic_tests_dir(self):
+        return os.path.join(self.project_root_dir, "ic_tests")
+
+    @property
+    def vt_tests_dir(self):
+        return os.path.join(self.project_root_dir, "vt_tests")
+
+
+TFactorsAvlbDirType = str
+TTestReturnsAvlbDirType = str

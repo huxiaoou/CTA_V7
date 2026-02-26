@@ -180,3 +180,57 @@ def gen_factors_avlb_db(
             value_columns=[CSqlVar(fac.factor_name, "REAL") for fac in factors],
         ),
     )
+
+
+def gen_ic_tests_db(
+    ic_tests_dir: str,
+    factor_class: TFactorClass,
+    factors: TFactors,
+    ret: CRet,
+) -> CDbStruct:
+    """
+
+    :param ic_tests_dir:
+    :param factor_class:
+    :param factors:
+    :param ret:
+    :return:
+    """
+
+    db_name = f"{factor_class}-{ret.ret_name}.db"
+    return CDbStruct(
+        db_save_dir=os.path.join(ic_tests_dir, "data"),
+        db_name=db_name,
+        table=CSqlTable(
+            name="ic",
+            primary_keys=[CSqlVar("trade_date", "TEXT")],
+            value_columns=[CSqlVar(fac.factor_name, "REAL") for fac in factors],
+        ),
+    )
+
+
+def gen_vt_tests_db(
+    vt_tests_dir: str,
+    factor_class: TFactorClass,
+    factors: TFactors,
+    ret: CRet,
+) -> CDbStruct:
+    """
+
+    :param vt_tests_dir:
+    :param factor_class:
+    :param factors:
+    :param ret:
+    :return:
+    """
+
+    db_name = f"{factor_class}-{ret.ret_name}.db"
+    return CDbStruct(
+        db_save_dir=os.path.join(vt_tests_dir, "data"),
+        db_name=db_name,
+        table=CSqlTable(
+            name="vt",
+            primary_keys=[CSqlVar("trade_date", "TEXT")],
+            value_columns=[CSqlVar(fac.factor_name, "REAL") for fac in factors],
+        ),
+    )
