@@ -174,6 +174,7 @@ if __name__ == "__main__":
             factors_by_instru_dir=proj_cfg.factors_by_instru_dir,
             factors_avlb_raw_dir=proj_cfg.factors_avlb_raw_dir,
             factors_avlb_ewa_dir=proj_cfg.factors_avlb_ewa_dir,
+            factors_avlb_sig_dir=proj_cfg.factors_avlb_sig_dir,
             db_struct_avlb=db_struct_avlb,
         )
         fac_avlb.main(bgn_date, stp_date, calendar)

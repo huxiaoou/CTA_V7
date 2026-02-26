@@ -112,3 +112,7 @@ class CCfgProj:
     @property
     def factors_avlb_ewa_dir(self):  # ewa: exponential weighted average
         return os.path.join(self.project_root_dir, "factors_avlb_ewa")
+
+    @property
+    def factors_avlb_sig_dir(self):  # sig: signal
+        return os.path.join(self.project_root_dir, "factors_avlb_sig")

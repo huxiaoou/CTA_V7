@@ -274,12 +274,14 @@ class CFactorsAvlb(_CFactorsByInstruDbOperator):
         factors_by_instru_dir: str,
         factors_avlb_raw_dir: str,
         factors_avlb_ewa_dir: str,
+        factors_avlb_sig_dir: str,
         db_struct_avlb: CDbStruct,
     ):
         super().__init__(factor_grp, factors_by_instru_dir)
         self.universe = universe
         self.factors_avlb_raw_dir = factors_avlb_raw_dir
         self.factors_avlb_ewa_dir = factors_avlb_ewa_dir
+        self.factors_avlb_sig_dir = factors_avlb_sig_dir
         self.db_struct_avlb = db_struct_avlb
 
     def load_ref_fac(self, bgn_date: str, stp_date: str, calendar: CCalendar) -> pd.DataFrame:
@@ -342,7 +344,7 @@ class CFactorsAvlb(_CFactorsByInstruDbOperator):
 
         grp_keys = ["trade_date"]
         o_data = (
-            avlb_i_data.groupby(by=grp_keys)[self.factor_grp.factor_names]
+            avlb_i_data.groupby(by=grp_keys)[self.factor_grp.factor_names]  # type:ignore
             .apply(__normalize)
             .reset_index(level=grp_keys)
         )
@@ -364,10 +366,8 @@ class CFactorsAvlb(_CFactorsByInstruDbOperator):
         grp_keys = ["instrument"]
         win, wgt = self.factor_grp.decay.win, self.factor_grp.decay.wgt
         o_data = (
-            avlb_i_data.groupby(by=grp_keys)[self.factor_grp.factor_names]
-            .apply(  # type:ignore
-                __mov_ave, w=wgt
-            )
+            avlb_i_data.groupby(by=grp_keys)[self.factor_grp.factor_names]  # type:ignore
+            .apply(__mov_ave, w=wgt)
             .reset_index(level=grp_keys)
         )
         avlb_o_data = pd.merge(
@@ -381,11 +381,39 @@ class CFactorsAvlb(_CFactorsByInstruDbOperator):
             raise ValueError(f"len of raw data = {l0}  != len of neu data = {l1}.")
         return avlb_o_data
 
-    def save(self, new_data: pd.DataFrame, calendar: CCalendar, save_type: Literal["raw", "ewa"]):
+    def convert_to_signal(self, avlb_i_data: pd.DataFrame) -> pd.DataFrame:
+        def __to_sig(data: pd.DataFrame) -> pd.DataFrame:
+            data_rnk = data.rank(pct=True)
+            data_ave = data_rnk.mean()
+            data_sgn: pd.DataFrame = np.sign(data_rnk - data_ave)
+            # data_sig = data_sgn * np.sqrt(np.abs(data_rnk - data_ave))
+            data_sig = data_sgn / data_sgn.abs().sum()
+            return data_sig
+
+        grp_keys = ["trade_date"]
+        o_data = (
+            avlb_i_data.groupby(by=grp_keys)[self.factor_grp.factor_names]  # type:ignore
+            .apply(__to_sig)
+            .reset_index(level=grp_keys)
+        )
+        avlb_o_data = pd.merge(
+            left=avlb_i_data[["trade_date", "instrument", "sectorL1"]],
+            right=o_data[self.factor_grp.factor_names],
+            how="inner",
+            left_index=True,
+            right_index=True,
+        )
+        if (l0 := len(avlb_i_data)) != (l1 := len(avlb_o_data)):
+            raise ValueError(f"len of raw data = {l0}  != len of sig data = {l1}.")
+        return avlb_o_data
+
+    def save(self, new_data: pd.DataFrame, calendar: CCalendar, save_type: Literal["raw", "ewa", "sig"]):
         if save_type == "raw":
             factors_avlb_dir = self.factors_avlb_raw_dir
         elif save_type == "ewa":
             factors_avlb_dir = self.factors_avlb_ewa_dir
+        elif save_type == "sig":
+            factors_avlb_dir = self.factors_avlb_sig_dir
         else:
             raise ValueError(f"Invalid save_type {save_type}")
         db_struct_fac = gen_factors_avlb_db(
@@ -429,6 +457,12 @@ class CFactorsAvlb(_CFactorsByInstruDbOperator):
         fac_avlb_ma_data = self.moving_average(fac_avlb_nrm_data)
         save_avlb_ma_data = fac_avlb_ma_data.query(f"trade_date >= '{bgn_date}'")
         self.save(save_avlb_ma_data, calendar, save_type="ewa")
+
+        # avlb sig
+        logger.info(f"Calculate signal from available factor {SFG(self.factor_grp.factor_class)}")
+        fac_avlb_sig_data = self.convert_to_signal(fac_avlb_ma_data)
+        save_avlb_sig_data = fac_avlb_sig_data.query(f"trade_date >= '{bgn_date}'")
+        self.save(save_avlb_sig_data, calendar, save_type="sig")
 
         logger.info(f"All done for factor {SFG(self.factor_grp.factor_class)}")
         return 0
