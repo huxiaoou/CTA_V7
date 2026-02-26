@@ -35,13 +35,6 @@ Remove-Item "$proj_dir\vt_tests\data\$factor-*.db"
 Remove-Item "$proj_dir\vt_tests\plots\$factor-*.pdf"
 Remove-Item "$proj_dir\vt_tests\\$factor-*.csv"
 
-if ($TestOT)
-{
-    Remove-Item "$proj_dir\ot_tests\data\$factor-*.db"
-    Remove-Item "$proj_dir\ot_tests\plots\$factor-*.pdf"
-    Remove-Item "$proj_dir\ot_tests\\$factor-*.csv"
-}
-
 if ($DisableMP)
 {
     python main.py --bgn $bgn_date_factor --stp $stp_date --nomp factor --fclass $factor
