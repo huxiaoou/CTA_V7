@@ -1,6 +1,7 @@
 import os
 from husfort.qsqlite import CDbStruct, CSqlTable, CSqlVar
 from typedefs.typedef_returns import TReturnClass, CRet
+from typedefs.typedef_factors import TFactorClass, TFactors
 
 
 # ----------------------------------------
@@ -128,5 +129,54 @@ def gen_test_returns_avlb_db(
             name=ret.ret_name,
             primary_keys=[CSqlVar("trade_date", "TEXT"), CSqlVar("instrument", "TEXT")],
             value_columns=[CSqlVar(ret.ret_name, "REAL")],
+        ),
+    )
+
+
+def gen_factors_by_instru_db(
+    instru: str,
+    factors_by_instru_dir: str,
+    factor_class: TFactorClass,
+    factors: TFactors,
+) -> CDbStruct:
+    """
+
+    :param instru: 'RB.SHFE'
+    :param factors_by_instru_dir: factors_by_instru_dir
+    :param factor_class:
+    :param factors:
+    :return:
+    """
+    return CDbStruct(
+        db_save_dir=os.path.join(factors_by_instru_dir, factor_class),
+        db_name=f"{instru}.db",
+        table=CSqlTable(
+            name="factor",
+            primary_keys=[CSqlVar("trade_date", "TEXT")],
+            value_columns=[CSqlVar("ticker", "TEXT")] + [CSqlVar(fac.factor_name, "REAL") for fac in factors],
+        ),
+    )
+
+
+def gen_factors_avlb_db(
+    factors_avlb_dir: str,
+    factor_class: TFactorClass,
+    factors: TFactors,
+) -> CDbStruct:
+    """
+
+    :param factors_avlb_dir: 'raw' or 'ewa'
+    :param factor_class:
+    :param factors:
+    :return:
+    """
+
+    return CDbStruct(
+        db_save_dir=factors_avlb_dir,
+        db_name=f"{factor_class}.db",
+        table=CSqlTable(
+            name="factor",
+            primary_keys=[CSqlVar("trade_date", "TEXT"), CSqlVar("instrument", "TEXT")],
+            value_columns=[CSqlVar(fac.factor_name, "REAL") for fac in factors],
         ),
     )

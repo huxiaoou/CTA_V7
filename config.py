@@ -5,6 +5,7 @@ from typedefs.typedef_instrus import TUniverse, TInstruName, CCfgInstru, CCfgAvl
 from typedefs.typedef_css import CCfgCss, CCfgICov, CCfgMkt
 from typedefs.typedef_returns import CCfgTst
 from typedef import CCfgProj, CCfgDbStruct, CCfgConst
+from solutions.factor import CCfgFactors
 
 # ---------- project configuration ----------
 
@@ -37,6 +38,13 @@ proj_cfg = CCfgProj(
 )
 
 check_and_mkdir(proj_cfg.project_root_dir)
+
+# --- factors ---
+cfg_factors = CCfgFactors(
+    algs_dir="factor_algs_activated",
+    cfg_data=_config["factors"],
+    decay=_config["factor_decay_default"],
+)
 
 # ---------- databases structure ----------
 with open(proj_cfg.db_struct_path, "r") as f:
@@ -86,4 +94,7 @@ db_struct_cfg = CCfgDbStruct(
 )
 
 if __name__ == "__main__":
+    print("--- Project Configuration ---")
     print(proj_cfg)
+    print("--- Factors ---")
+    print(cfg_factors)

@@ -1,7 +1,8 @@
 import argparse
+from solutions.factor import CCfgFactors
 
 
-def parse_args():
+def parse_args(cfg_facs: CCfgFactors):
     arg_parser = argparse.ArgumentParser(
         description="This project is designed to do a CTA strategy research and backtesting."
     )
@@ -46,19 +47,29 @@ def parse_args():
     # switch: test return
     arg_parser_subs.add_parser(name="test_return", help="Calculate test returns")
 
+    # switch: factor
+    arg_parser_sub = arg_parser_subs.add_parser(name="factor", help="Calculate factor")
+    arg_parser_sub.add_argument(
+        "--fclass",
+        type=str,
+        help="factor class to run",
+        required=True,
+        choices=cfg_facs.classes,
+    )
+
     return arg_parser.parse_args()
 
 
 if __name__ == "__main__":
     from loguru import logger
-    from config import proj_cfg, db_struct_cfg
+    from config import proj_cfg, db_struct_cfg, cfg_factors
     from husfort.qlog import define_logger
     from husfort.qcalendar import CCalendar
     from solutions.db_generator import get_avlb_db, get_css_db, get_icov_db, get_market_db
 
     define_logger()
     calendar = CCalendar(proj_cfg.calendar_path)
-    args = parse_args()
+    args = parse_args(cfg_facs=cfg_factors)
     bgn_date, stp_date = args.bgn, args.stp or calendar.get_next_date(args.bgn, shift=1)
 
     # ---------- databases structure ----------
@@ -118,17 +129,53 @@ if __name__ == "__main__":
 
         for ret in proj_cfg.all_rets:
             test_returns_by_instru = CTestReturnsByInstru(
-                ret=ret, universe=proj_cfg.universe,
+                ret=ret,
+                universe=proj_cfg.universe,
                 test_returns_by_instru_dir=proj_cfg.test_returns_by_instru_dir,
                 db_struct_preprocess=db_struct_cfg.preprocess,
             )
             test_returns_by_instru.main(bgn_date, stp_date, calendar)
             test_returns_avlb = CTestReturnsAvlb(
-                ret=ret, universe=proj_cfg.universe,
+                ret=ret,
+                universe=proj_cfg.universe,
                 test_returns_by_instru_dir=proj_cfg.test_returns_by_instru_dir,
                 test_returns_avlb_raw_dir=proj_cfg.test_returns_avlb_raw_dir,
                 db_struct_avlb=db_struct_avlb,
             )
             test_returns_avlb.main(bgn_date, stp_date, calendar)
+    elif args.switch == "factor":
+        from solutions.factor import CFactorsAvlb, pick_factor
+        from husfort.qinstruments import CInstruMgr
+
+        instru_mgr = CInstruMgr(instru_info_path=proj_cfg.instru_info_path, key="tushareId")
+        cfg, fac = pick_factor(
+            fclass=args.fclass,
+            cfg_factors=cfg_factors,
+            factors_by_instru_dir=proj_cfg.factors_by_instru_dir,
+            universe=proj_cfg.universe,
+            preprocess=db_struct_cfg.preprocess,
+            minute_bar=db_struct_cfg.minute_bar,
+            db_struct_pos=db_struct_cfg.position,
+            db_struct_forex=db_struct_cfg.forex,
+            db_struct_macro=db_struct_cfg.macro,
+            db_struct_mkt=db_struct_mkt,
+            instru_mgr=instru_mgr,
+        )
+        fac.main(
+            bgn_date=bgn_date,
+            stp_date=stp_date,
+            calendar=calendar,
+            call_multiprocess=not args.nomp,
+            processes=args.processes,
+        )
+        fac_avlb = CFactorsAvlb(
+            factor_grp=cfg,
+            universe=proj_cfg.universe,
+            factors_by_instru_dir=proj_cfg.factors_by_instru_dir,
+            factors_avlb_raw_dir=proj_cfg.factors_avlb_raw_dir,
+            factors_avlb_ewa_dir=proj_cfg.factors_avlb_ewa_dir,
+            db_struct_avlb=db_struct_avlb,
+        )
+        fac_avlb.main(bgn_date, stp_date, calendar)
     else:
         logger.error(f"switch = {args.switch} is not implemented yet.")

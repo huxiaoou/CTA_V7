@@ -189,6 +189,15 @@ tst:
   wins: [1, 5]
   wins_qtest: [5] # must be subset of wins
 
+# ------- factors -------
+factor_decay_default:
+  rate: 1.0
+  win: 1
+
+factors:
+  REOC:
+    args:
+      wins: [3, 5, 10, 20, 40, 60, 120, 240]
 # ------- const -------
 CONST:
   INIT_CASH: 100_000_000

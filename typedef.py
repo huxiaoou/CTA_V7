@@ -100,3 +100,15 @@ class CCfgProj:
     @property
     def test_returns_avlb_raw_dir(self):
         return os.path.join(self.project_root_dir, "test_returns_avlb_raw")
+
+    @property
+    def factors_by_instru_dir(self):
+        return os.path.join(self.project_root_dir, "factors_by_instru")
+
+    @property
+    def factors_avlb_raw_dir(self):
+        return os.path.join(self.project_root_dir, "factors_avlb_raw")
+
+    @property
+    def factors_avlb_ewa_dir(self):  # ewa: exponential weighted average
+        return os.path.join(self.project_root_dir, "factors_avlb_ewa")
