@@ -273,15 +273,15 @@ class CFactorsAvlb(_CFactorsByInstruDbOperator):
         universe: TUniverse,
         factors_by_instru_dir: str,
         factors_avlb_raw_dir: str,
-        factors_avlb_ewa_dir: str,
         factors_avlb_sig_dir: str,
+        factors_avlb_ewa_dir: str,
         db_struct_avlb: CDbStruct,
     ):
         super().__init__(factor_grp, factors_by_instru_dir)
         self.universe = universe
         self.factors_avlb_raw_dir = factors_avlb_raw_dir
-        self.factors_avlb_ewa_dir = factors_avlb_ewa_dir
         self.factors_avlb_sig_dir = factors_avlb_sig_dir
+        self.factors_avlb_ewa_dir = factors_avlb_ewa_dir
         self.db_struct_avlb = db_struct_avlb
 
     def load_ref_fac(self, bgn_date: str, stp_date: str, calendar: CCalendar) -> pd.DataFrame:
@@ -359,28 +359,6 @@ class CFactorsAvlb(_CFactorsByInstruDbOperator):
             raise ValueError(f"len of raw data = {l0}  != len of nrm data = {l1}.")
         return avlb_o_data
 
-    def moving_average(self, avlb_i_data: pd.DataFrame) -> pd.DataFrame:
-        def __mov_ave(data: pd.DataFrame, w: np.ndarray) -> pd.DataFrame:
-            return data.rolling(window=win, min_periods=1).apply(lambda z: z @ w if len(z) == len(w) else z.mean())
-
-        grp_keys = ["instrument"]
-        win, wgt = self.factor_grp.decay.win, self.factor_grp.decay.wgt
-        o_data = (
-            avlb_i_data.groupby(by=grp_keys)[self.factor_grp.factor_names]  # type:ignore
-            .apply(__mov_ave, w=wgt)
-            .reset_index(level=grp_keys)
-        )
-        avlb_o_data = pd.merge(
-            left=avlb_i_data[["trade_date", "instrument", "sectorL1"]],
-            right=o_data[self.factor_grp.factor_names],
-            how="inner",
-            left_index=True,
-            right_index=True,
-        )
-        if (l0 := len(avlb_i_data)) != (l1 := len(avlb_o_data)):
-            raise ValueError(f"len of raw data = {l0}  != len of neu data = {l1}.")
-        return avlb_o_data
-
     def convert_to_signal(self, avlb_i_data: pd.DataFrame) -> pd.DataFrame:
         def __to_sig(data: pd.DataFrame) -> pd.DataFrame:
             data_rnk = data.rank(pct=True)
@@ -407,13 +385,49 @@ class CFactorsAvlb(_CFactorsByInstruDbOperator):
             raise ValueError(f"len of raw data = {l0}  != len of sig data = {l1}.")
         return avlb_o_data
 
-    def save(self, new_data: pd.DataFrame, calendar: CCalendar, save_type: Literal["raw", "ewa", "sig"]):
+    def ewa(self, avlb_i_data: pd.DataFrame) -> pd.DataFrame:
+        def __mov_ave(data: pd.DataFrame, w: np.ndarray) -> pd.DataFrame:
+            return data.rolling(window=win, min_periods=1).apply(lambda z: z @ w if len(z) == len(w) else z.mean())
+
+        grp_keys = ["instrument"]
+        win, wgt = self.factor_grp.decay.win, self.factor_grp.decay.wgt
+        o_data = (
+            avlb_i_data.groupby(by=grp_keys)[self.factor_grp.factor_names]  # type:ignore
+            .apply(__mov_ave, w=wgt)
+            .reset_index(level=grp_keys)
+        )
+        avlb_o_data_raw = pd.merge(
+            left=avlb_i_data[["trade_date", "instrument", "sectorL1"]],
+            right=o_data[self.factor_grp.factor_names],
+            how="inner",
+            left_index=True,
+            right_index=True,
+        )
+
+        grp_keys = ["trade_date"]
+        nrm_data = (
+            avlb_o_data_raw.groupby(by=grp_keys)[self.factor_grp.factor_names]
+            .apply(lambda z: z / z.abs().sum())
+            .reset_index(level=grp_keys)
+        )
+        avlb_o_data = pd.merge(
+            left=avlb_o_data_raw[["trade_date", "instrument", "sectorL1"]],
+            right=nrm_data[self.factor_grp.factor_names],
+            how="inner",
+            left_index=True,
+            right_index=True,
+        )
+        if (l0 := len(avlb_i_data)) != (l1 := len(avlb_o_data)):
+            raise ValueError(f"len of raw data = {l0}  != len of neu data = {l1}.")
+        return avlb_o_data
+
+    def save(self, new_data: pd.DataFrame, calendar: CCalendar, save_type: Literal["raw", "sig", "ewa"]):
         if save_type == "raw":
             factors_avlb_dir = self.factors_avlb_raw_dir
-        elif save_type == "ewa":
-            factors_avlb_dir = self.factors_avlb_ewa_dir
         elif save_type == "sig":
             factors_avlb_dir = self.factors_avlb_sig_dir
+        elif save_type == "ewa":
+            factors_avlb_dir = self.factors_avlb_ewa_dir
         else:
             raise ValueError(f"Invalid save_type {save_type}")
         db_struct_fac = gen_factors_avlb_db(
@@ -452,17 +466,17 @@ class CFactorsAvlb(_CFactorsByInstruDbOperator):
         save_avlb_nrm_data = fac_avlb_nrm_data.query(f"trade_date >= '{bgn_date}'")
         self.save(save_avlb_nrm_data, calendar, save_type="raw")
 
-        # avlb ma
-        logger.info(f"Moving average available factor {SFG(self.factor_grp.factor_class)}")
-        fac_avlb_ma_data = self.moving_average(fac_avlb_nrm_data)
-        save_avlb_ma_data = fac_avlb_ma_data.query(f"trade_date >= '{bgn_date}'")
-        self.save(save_avlb_ma_data, calendar, save_type="ewa")
-
         # avlb sig
         logger.info(f"Calculate signal from available factor {SFG(self.factor_grp.factor_class)}")
-        fac_avlb_sig_data = self.convert_to_signal(fac_avlb_ma_data)
+        fac_avlb_sig_data = self.convert_to_signal(fac_avlb_nrm_data)
         save_avlb_sig_data = fac_avlb_sig_data.query(f"trade_date >= '{bgn_date}'")
         self.save(save_avlb_sig_data, calendar, save_type="sig")
+
+        # avlb ewa
+        logger.info(f"Moving average available factor {SFG(self.factor_grp.factor_class)}")
+        fac_avlb_ewa_data = self.ewa(fac_avlb_sig_data)
+        save_avlb_ewa_data = fac_avlb_ewa_data.query(f"trade_date >= '{bgn_date}'")
+        self.save(save_avlb_ewa_data, calendar, save_type="ewa")
 
         logger.info(f"All done for factor {SFG(self.factor_grp.factor_class)}")
         return 0
@@ -474,7 +488,7 @@ class CFactorsLoader:
 
         :param factor_class:
         :param factors:
-        :param factors_avlb_dir:  factors_avlb_raw_dir or factors_avlb_neu_dir
+        :param factors_avlb_dir:  factors_avlb_raw_dir, factors_avlb_sig_dir, or factors_avlb_ewa_dir
         """
         self.factor_class = factor_class
         self.factors = factors
@@ -508,7 +522,7 @@ class CFactorsLoader:
 
 
 class CCfgFactors:
-    def __init__(self, algs_dir: str, cfg_data: dict, decay: dict[str, int | float]):
+    def __init__(self, algs_dir: str, cfg_data: dict, factor_decay_default: dict[str, int | float]):
         self.mgr: dict[str, tuple[CCfgFactorGrp, type[CFactorsByInstru]]] = {}
         for module in os.listdir(algs_dir):
             if module.endswith(".py"):
@@ -519,7 +533,7 @@ class CCfgFactors:
                 type_cfg = getattr(module_contents.__dict__[module_name], f"CCfgFactorGrp{factor_class}")
                 type_fac = getattr(module_contents.__dict__[module_name], f"CFactor{factor_class}")
                 d = cfg_data[factor_class]
-                d["decay"] = CDecay(**d.get("decay", decay))
+                d["decay"] = CDecay(**d.get("decay", factor_decay_default))
                 wins, lbds = d["args"].get("wins", None), d["args"].get("lbds", None)
                 if type_cfg.__base__ == CCfgFactorGrpWin:
                     d["args"] = CArgsWin(wins=wins)

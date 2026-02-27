@@ -43,7 +43,7 @@ check_and_mkdir(proj_cfg.project_root_dir)
 cfg_factors = CCfgFactors(
     algs_dir="factor_algs_activated",
     cfg_data=_config["factors"],
-    decay=_config["factor_decay_default"],
+    factor_decay_default=_config["factor_decay_default"],
 )
 
 # ---------- databases structure ----------

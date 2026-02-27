@@ -21,7 +21,7 @@ function CheckExistenceRemove
 
 $proj_dir = "E:\Data\Projects\CTA_V7"
 
-Write-Host "Run for $factor, factor = $bgn_date_factor, qtest = $bgn_date_qtest, stp = $stp_date"
+Write-Host "Run for calculation and test for $factor, factor=$bgn_date_factor, qtest=$bgn_date_qtest, stp=$stp_date" -ForegroundColor Green
 
 CheckExistenceRemove("$proj_dir\factors_by_instru\$factor")
 CheckExistenceRemove("$proj_dir\factors_avlb_raw\$factor.db")

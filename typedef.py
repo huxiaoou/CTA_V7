@@ -72,10 +72,17 @@ class CCfgProj:
         ]
 
     @property
-    def qtest_rets(self) -> TRets:
+    def ic_rets(self) -> TRets:
         return [
             CRet(ret_class=TReturnClass(rc), win=w, lag=self.const.LAG)
-            for rc, w in product(TReturnClass, self.tst.wins_qtest)
+            for rc, w in product(TReturnClass, self.tst.wins_ic)
+        ]
+
+    @property
+    def vt_rets(self) -> TRets:
+        return [
+            CRet(ret_class=TReturnClass(rc), win=w, lag=self.const.LAG)
+            for rc, w in product(TReturnClass, self.tst.wins_vt)
         ]
 
     @property
@@ -111,12 +118,12 @@ class CCfgProj:
         return os.path.join(self.project_root_dir, "factors_avlb_raw")
 
     @property
-    def factors_avlb_ewa_dir(self):  # ewa: exponential weighted average
-        return os.path.join(self.project_root_dir, "factors_avlb_ewa")
-
-    @property
     def factors_avlb_sig_dir(self):  # sig: signal
         return os.path.join(self.project_root_dir, "factors_avlb_sig")
+
+    @property
+    def factors_avlb_ewa_dir(self):  # ewa: exponential weighted average
+        return os.path.join(self.project_root_dir, "factors_avlb_ewa")
 
     @property
     def ic_tests_dir(self):

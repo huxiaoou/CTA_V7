@@ -49,4 +49,5 @@ TRets = list[CRet]
 @dataclass(frozen=True)
 class CCfgTst:
     wins: list[int]
-    wins_qtest: list[int]  # for ic and vt
+    wins_ic: list[int]  # for ic
+    wins_vt: list[int]  # for vt

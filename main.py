@@ -193,8 +193,8 @@ if __name__ == "__main__":
             universe=proj_cfg.universe,
             factors_by_instru_dir=proj_cfg.factors_by_instru_dir,
             factors_avlb_raw_dir=proj_cfg.factors_avlb_raw_dir,
-            factors_avlb_ewa_dir=proj_cfg.factors_avlb_ewa_dir,
             factors_avlb_sig_dir=proj_cfg.factors_avlb_sig_dir,
+            factors_avlb_ewa_dir=proj_cfg.factors_avlb_ewa_dir,
             db_struct_avlb=db_struct_avlb,
         )
         fac_avlb.main(bgn_date, stp_date, calendar)
@@ -207,12 +207,16 @@ if __name__ == "__main__":
             "vt": proj_cfg.vt_tests_dir,
         }[args.switch]
         aux_args_list: list[TICTestAuxArgs] = {
-            "ic": [(proj_cfg.factors_avlb_ewa_dir, proj_cfg.test_returns_avlb_raw_dir)],
-            "vt": [(proj_cfg.factors_avlb_sig_dir, proj_cfg.test_returns_avlb_raw_dir)],
+            "ic": [(proj_cfg.factors_avlb_raw_dir, proj_cfg.test_returns_avlb_raw_dir)],
+            "vt": [(proj_cfg.factors_avlb_ewa_dir, proj_cfg.test_returns_avlb_raw_dir)],
+        }[args.switch]
+        rets = {
+            "ic": proj_cfg.ic_rets,
+            "vt": proj_cfg.vt_rets,
         }[args.switch]
 
         main_qtests(
-            rets=proj_cfg.qtest_rets,
+            rets=rets,
             factor_grp=factor_grp,
             aux_args_list=aux_args_list,
             tests_dir=tests_dir,
