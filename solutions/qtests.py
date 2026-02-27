@@ -24,14 +24,12 @@ class __CQTest:
         ret: CRet,
         factors_avlb_dir: str,
         test_returns_avlb_dir: str,
-        db_struct_avlb: CDbStruct,
         tests_dir: str,
     ):
         self.factor_grp = factor_grp
         self.ret = ret
         self.factors_avlb_dir = factors_avlb_dir
         self.test_returns_avlb_dir = test_returns_avlb_dir
-        self.db_struct_avlb = db_struct_avlb
         self.tests_dir = tests_dir
 
     @property
@@ -52,16 +50,6 @@ class __CQTest:
             factors_avlb_dir=self.factors_avlb_dir,
         )
         return factors_loader.load(bgn_date, stp_date)
-
-    def load_avlb(self, bgn_date: str, stp_date: str) -> pd.DataFrame:
-        sqldb = CMgrSqlDb(
-            db_save_dir=self.db_struct_avlb.db_save_dir,
-            db_name=self.db_struct_avlb.db_name,
-            table=self.db_struct_avlb.table,
-            mode="r",
-        )
-        data = sqldb.read_by_range(bgn_date, stp_date, value_columns=["trade_date", "instrument", "volatility"])
-        return data
 
     def gen_test_db_struct(self) -> CDbStruct:
         raise NotImplementedError
@@ -103,8 +91,11 @@ class __CQTest:
         )
         return data
 
-    def core(self, data: pd.DataFrame, pb: Progress = None, task: TaskID = None) -> pd.Series:
+    def core_for_groupby(self, data: pd.DataFrame, pb: Progress, task: TaskID) -> pd.Series:
         raise NotImplementedError
+
+    def core_for_global(self, input_data: pd.DataFrame, qtest_data: pd.DataFrame) -> pd.DataFrame:
+        return qtest_data
 
     def get_plot_ylim(self) -> tuple[float, float]:
         raise NotImplementedError
@@ -143,7 +134,6 @@ class __CQTest:
         base_bgn_date, base_stp_date = iter_dates[0], iter_dates[-self.ret.shift]
         returns_data = self.load_returns(base_bgn_date, base_stp_date)
         factors_data = self.load_factors(base_bgn_date, base_stp_date)
-        avlb_data = self.load_avlb(base_bgn_date, base_stp_date)
         input_data = pd.merge(
             left=returns_data,
             right=factors_data,
@@ -153,11 +143,6 @@ class __CQTest:
         lr, lf, li = len(returns_data), len(factors_data), len(input_data)
         if (li != lr) or (li != lf):
             raise ValueError(f"len of factor data = {lf}, len of return data = {lr}, len of input data = {li}.")
-        input_data = input_data.merge(
-            right=avlb_data,
-            on=["trade_date", "instrument"],
-            how="left",
-        )
         with Progress(
             TextColumn("{task.description}"),
             BarColumn(),
@@ -166,7 +151,11 @@ class __CQTest:
         ) as pb:
             task = pb.add_task(description=f"{self.save_id}")
             pb.update(task_id=task, completed=0, total=len(input_data["trade_date"].unique()))
-            qtest_data = input_data.groupby(by="trade_date").apply(self.core, pb=pb, task=task)
+            qtest_data = input_data.groupby(by="trade_date").apply(
+                self.core_for_groupby, pb=pb, task=task  # type:ignore
+            )
+            qtest_data = self.core_for_global(input_data, qtest_data)
+
         qtest_data["trade_date"] = save_dates
         new_data = qtest_data[["trade_date"] + self.factor_grp.factor_names]
         new_data = new_data.reset_index(drop=True)
@@ -192,7 +181,7 @@ class __CQTest:
 # --------- ic-tests ---------
 # ----------------------------
 class CICTest(__CQTest):
-    def core(self, data: pd.DataFrame, pb: Progress = None, task: TaskID = None) -> pd.Series:
+    def core_for_groupby(self, data: pd.DataFrame, pb: Progress, task: TaskID) -> pd.Series:
         s = data[self.factor_grp.factor_names].corrwith(data[self.ret.ret_name], axis=0, method="spearman")
         pb.update(task_id=task, advance=1)
         return s
@@ -243,10 +232,27 @@ class CICTest(__CQTest):
 # --------- vt-tests ---------
 # ----------------------------
 class CVTTest(__CQTest):
-    def core(self, data: pd.DataFrame, pb: Progress = None, task: TaskID = None) -> pd.Series:
-        s = data[self.factor_grp.factor_names].T @ data[self.ret.ret_name]
+    def __init__(self, cost_rate: float, **kwargs):
+        super().__init__(**kwargs)
+        self.cost_rate = cost_rate
+
+    def core_for_groupby(self, data: pd.DataFrame, pb: Progress, task: TaskID) -> pd.Series:
+        s = data[self.ret.ret_name] @ data[self.factor_grp.factor_names] / self.ret.win
         pb.update(task_id=task, advance=1)
         return s
+
+    def core_for_global(self, input_data: pd.DataFrame, qtest_data: pd.DataFrame) -> pd.DataFrame:
+        turnover: dict[str, pd.Series] = {}
+        for factor in self.factor_grp.factor_names:
+            raw_wgt = (
+                input_data[["trade_date", "instrument", factor]]
+                .pivot_table(index="trade_date", columns="instrument", values=factor, aggfunc="first")
+                .fillna(0)
+            )
+            dlt_wgt = raw_wgt.diff().fillna(0)
+            turnover[factor] = dlt_wgt.abs().sum(axis=1)
+        turnover_data = pd.DataFrame(turnover)
+        return qtest_data - turnover_data * self.cost_rate
 
     def gen_test_db_struct(self) -> CDbStruct:
         return gen_vt_tests_db(
@@ -298,13 +304,13 @@ def main_qtests(
     rets: TRets,
     factor_grp: CCfgFactorGrp,
     aux_args_list: list[TICTestAuxArgs],
-    db_struct_avlb: CDbStruct,
     tests_dir: str,
     bgn_date: str,
     stp_date: str,
     calendar: CCalendar,
     test_type: Literal["ic", "vt"],
     call_multiprocess: bool,
+    cost_rate: float,
 ):
     if test_type == "ic":
         test_cls = CICTest
@@ -321,9 +327,10 @@ def main_qtests(
                 "ret": ret,
                 "factors_avlb_dir": factors_avlb_dir,
                 "test_returns_avlb_dir": test_returns_avlb_dir,
-                "db_struct_avlb": db_struct_avlb,
                 "tests_dir": tests_dir,
             }
+            if test_type == "vt":
+                kwargs.update({"cost_rate": cost_rate})
             test = test_cls(**kwargs)
             tests.append(test)
 

@@ -216,12 +216,12 @@ if __name__ == "__main__":
             factor_grp=factor_grp,
             aux_args_list=aux_args_list,
             tests_dir=tests_dir,
-            db_struct_avlb=db_struct_avlb,
             bgn_date=bgn_date,
             stp_date=stp_date,
             calendar=calendar,
             test_type=args.switch,
             call_multiprocess=not args.nomp,
+            cost_rate=proj_cfg.const.COST_RATE_VT,
         )
     else:
         logger.error(f"switch = {args.switch} is not implemented yet.")

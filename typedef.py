@@ -31,6 +31,7 @@ class CCfgDbStruct:
 class CCfgConst:
     INIT_CASH: float
     COST_RATE: float
+    COST_RATE_VT: float
     LAG: int
 
 
