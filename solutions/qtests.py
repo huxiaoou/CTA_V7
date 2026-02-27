@@ -263,7 +263,7 @@ class CVTTest(__CQTest):
         )
 
     def get_plot_ylim(self) -> tuple[float, float]:
-        return -2.0, 2.4
+        return -0.50, 0.50
 
     def gen_report(self, test_data: pd.DataFrame, ret_scale: float = 100.0, ann_rate: float = 250) -> pd.DataFrame:
         test_data["trade_year"] = test_data.index.map(lambda z: z[0:4])

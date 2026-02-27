@@ -54,7 +54,7 @@ class CFactorREOC(CFactorsByInstru):
         for win, name_vanilla, name_vol in zip(self.cfg.args.wins, self.cfg.names_vanilla, self.cfg.names_vol):
             maj_data[name_vanilla] = reoc.rolling(win).sum()
             maj_data[name_vol] = reoc.rolling(win).std()
-        w0, w1 = 240, 5
+        w0, w1 = 240, 3
         n0, n1 = self.cfg.name_vanilla(w0), self.cfg.name_vanilla(w1)
         maj_data[self.cfg.name_diff()] = maj_data[n0] * np.sqrt(w1 / w0) - maj_data[n1]
         maj_data = maj_data.reset_index()
