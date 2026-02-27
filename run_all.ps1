@@ -11,6 +11,4 @@ python main.py --bgn $bgn_date_avlb --stp $stp_date css
 python main.py --bgn $bgn_date_avlb --stp $stp_date icov
 python main.py --bgn $bgn_date_avlb --stp $stp_date test_return
 
-python main.py --bgn $bgn_date_factor --stp $stp_date --nomp factor --fclass $factor
-python main.py --bgn $bgn_date_qtest --stp $stp_date --nomp ic --fclass $factor
-python main.py --bgn $bgn_date_qtest --stp $stp_date --nomp vt --fclass $factor
+.\factor_cal_tst.ps1 $bgn_date_factor $bgn_date_qtest $stp_date REOC

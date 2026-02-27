@@ -25,6 +25,7 @@ Write-Host "Run for $factor, factor = $bgn_date_factor, qtest = $bgn_date_qtest,
 
 CheckExistenceRemove("$proj_dir\factors_by_instru\$factor")
 CheckExistenceRemove("$proj_dir\factors_avlb_raw\$factor.db")
+CheckExistenceRemove("$proj_dir\factors_avlb_sig\$factor.db")
 CheckExistenceRemove("$proj_dir\factors_avlb_ewa\$factor.db")
 
 Remove-Item "$proj_dir\ic_tests\data\$factor-*.db"
