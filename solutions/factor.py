@@ -360,12 +360,17 @@ class CFactorsAvlb(_CFactorsByInstruDbOperator):
         return avlb_o_data
 
     def convert_to_signal(self, avlb_i_data: pd.DataFrame) -> pd.DataFrame:
+        mid_2_top_ratio: float = 0.5
+        rou: float = mid_2_top_ratio ** 2
+
         def __to_sig(data: pd.DataFrame) -> pd.DataFrame:
             data_rnk = data.rank(pct=True)
             data_ave = data_rnk.mean()
-            data_sgn: pd.DataFrame = np.sign(data_rnk - data_ave)
-            # data_sig = data_sgn * np.sqrt(np.abs(data_rnk - data_ave))
-            data_sig = data_sgn / data_sgn.abs().sum()
+            data_neu = data_rnk - data_ave
+            data_val = rou ** (-data_neu.abs())
+            data_sgn = np.sign(data_neu)
+            data_sig_r = data_sgn * data_val
+            data_sig = data_sig_r / data_sig_r.abs().sum()
             return data_sig
 
         grp_keys = ["trade_date"]
