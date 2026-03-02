@@ -7,14 +7,12 @@ param (
     [Switch]$DisableMP
 )
 
-function CheckExistenceRemove
-{
+function CheckExistenceRemove {
     param (
         [string]$TargetPath
     )
 
-    if (Test-Path $TargetPath)
-    {
+    if (Test-Path $TargetPath) {
         Remove-Item $TargetPath -Recurse
     }
 }
@@ -30,20 +28,18 @@ CheckExistenceRemove("$proj_dir\factors_avlb_ewa\$factor.db")
 
 Remove-Item "$proj_dir\ic_tests\data\$factor-*.db"
 Remove-Item "$proj_dir\ic_tests\plots\$factor-*.pdf"
-Remove-Item "$proj_dir\ic_tests\\$factor-*.csv"
+Remove-Item "$proj_dir\ic_tests\reports\$factor-*.csv"
 
 Remove-Item "$proj_dir\vt_tests\data\$factor-*.db"
 Remove-Item "$proj_dir\vt_tests\plots\$factor-*.pdf"
-Remove-Item "$proj_dir\vt_tests\\$factor-*.csv"
+Remove-Item "$proj_dir\vt_tests\reports\$factor-*.csv"
 
-if ($DisableMP)
-{
+if ($DisableMP) {
     python main.py --bgn $bgn_date_factor --stp $stp_date --nomp factor --fclass $factor
     python main.py --bgn $bgn_date_qtest --stp $stp_date --nomp ic --fclass $factor
     python main.py --bgn $bgn_date_qtest --stp $stp_date --nomp vt --fclass $factor
 }
-else
-{
+else {
     python main.py --bgn $bgn_date_factor --stp $stp_date factor --fclass $factor
     python main.py --bgn $bgn_date_qtest --stp $stp_date ic --fclass $factor
     python main.py --bgn $bgn_date_qtest --stp $stp_date vt --fclass $factor
