@@ -12,3 +12,4 @@ python main.py --bgn $bgn_date_avlb --stp $stp_date icov
 python main.py --bgn $bgn_date_avlb --stp $stp_date test_return
 
 .\run_factor_cal_tst.ps1 $bgn_date_factor $bgn_date_qtest $stp_date REOC
+.\run_factor_cal_tst.ps1 $bgn_date_factor $bgn_date_qtest $stp_date BASIS
